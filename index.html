@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>NEXUS AI - Gesture Engine v3</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+    font-family: sans-serif;
+}
+
+/* 摄像头画面 */
+video {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* 画布层 */
+canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* HUD */
+#hud {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: #00f0ff;
+    font-size: 18px;
+    text-shadow: 0 0 10px #00f0ff;
+}
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+<div id="hud">NEXUS AI: Loading...</div>
+
+<script type="module">
+import { Hands } from "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js";
+import { Camera } from "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const hud = document.getElementById("hud");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+/* ===== 粒子 ===== */
+function particle(x, y, color="#00f0ff") {
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = color;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+/* ===== 手指状态 ===== */
+function fingerState(lm) {
+    return {
+        thumb: lm[4].x < lm[3].x,
+        index: lm[8].y < lm[6].y,
+        middle: lm[12].y < lm[10].y,
+        ring: lm[16].y < lm[14].y,
+        pinky: lm[20].y < lm[18].y
+    };
+}
+
+/* ===== 10+手势识别 ===== */
+function gesture(lm) {
+    const f = fingerState(lm);
+
+    // ✊ 握拳
+    if (!f.index && !f.middle && !f.ring && !f.pinky) return "FIST";
+
+    // ✋ 张开
+    if (f.index && f.middle && f.ring && f.pinky) return "OPEN_HAND";
+
+    // ✌️ V
+    if (f.index && f.middle && !f.ring && !f.pinky) return "PEACE";
+
+    // ☝️ 食指
+    if (f.index && !f.middle && !f.ring && !f.pinky) return "POINT";
+
+    // 🤟 三指
+    if (f.index && f.middle && f.ring && !f.pinky) return "THREE";
+
+    // 🖖 四指
+    if (f.index && f.middle && f.ring && f.pinky && !f.thumb) return "FOUR";
+
+    // 👌 OK（捏合）
+    const dx = lm[4].x - lm[8].x;
+    const dy = lm[4].y - lm[8].y;
+    if (Math.sqrt(dx*dx + dy*dy) < 0.05) return "OK";
+
+    // 📞 call
+    if (f.thumb && f.pinky && !f.index && !f.middle) return "CALL";
+
+    return "UNKNOWN";
+}
+
+/* ===== 稳定器（防抖） ===== */
+let lastGesture = "";
+let stableCount = 0;
+
+/* ===== 手势效果 ===== */
+function trigger(g, x, y) {
+    switch(g) {
+
+        case "FIST":
+            for (let i=0;i<15;i++)
+                particle(x + Math.random()*60-30, y + Math.random()*60-30, "#ff0055");
+            break;
+
+        case "OPEN_HAND":
+            for (let i=0;i<10;i++)
+                particle(x + Math.random()*80-40, y + Math.random()*80-40, "#00f0ff");
+            break;
+
+        case "PEACE":
+            for (let i=0;i<8;i++)
+                particle(x + i*5, y, "#00ff99");
+            break;
+
+        case "POINT":
+            particle(x, y, "#ffffff");
+            break;
+
+        case "OK":
+            for (let i=0;i<20;i++)
+                particle(x + Math.random()*100-50, y + Math.random()*100-50, "#ff00ff");
+            break;
+
+        case "CALL":
+            for (let i=0;i<12;i++)
+                particle(x, y + i*2, "#ffaa00");
+            break;
+
+        case "THREE":
+            for (let i=0;i<6;i++)
+                particle(x + i*10, y - i*5, "#00ffcc");
+            break;
+    }
+}
+
+/* ===== 绘制手 ===== */
+function drawHand(lm) {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    const links = [
+        [0,1],[1,2],[2,3],[3,4],
+        [0,5],[5,6],[6,7],[7,8],
+        [5,9],[9,10],[10,11],[11,12],
+        [9,13],[13,14],[14,15],[15,16],
+        [13,17],[17,18],[18,19],[19,20]
+    ];
+
+    ctx.strokeStyle = "#00f0ff";
+    ctx.shadowBlur = 6;
+
+    for (let l of links) {
+        const a = lm[l[0]];
+        const b = lm[l[1]];
+        ctx.beginPath();
+        ctx.moveTo(a.x * canvas.width, a.y * canvas.height);
+        ctx.lineTo(b.x * canvas.width, b.y * canvas.height);
+        ctx.stroke();
+    }
+
+    for (let p of lm) {
+        ctx.beginPath();
+        ctx.arc(p.x * canvas.width, p.y * canvas.height, 3, 0, Math.PI*2);
+        ctx.fillStyle = "#00f0ff";
+        ctx.fill();
+    }
+}
+
+/* ===== AI ===== */
+const hands = new Hands({
+    locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.7
+});
+
+hands.onResults((results) => {
+    if (!results.multiHandLandmarks) return;
+
+    const lm = results.multiHandLandmarks[0];
+
+    drawHand(lm);
+
+    const g = gesture(lm);
+
+    /* 稳定识别 */
+    if (g === lastGesture) stableCount++;
+    else {
+        stableCount = 0;
+        lastGesture = g;
+    }
+
+    const x = lm[8].x * canvas.width;
+    const y = lm[8].y * canvas.height;
+
+    hud.innerText = `NEXUS AI → ${g} (stable:${stableCount})`;
+
+    if (stableCount > 2) {
+        trigger(g, x, y);
+    }
+});
+
+/* ===== 摄像头 ===== */
+const camera = new Camera(video, {
+    onFrame: async () => {
+        await hands.send({ image: video });
+    },
+    width: 1280,
+    height: 720
+});
+
+camera.start();
+</script>
+
+</body>
+</html>
