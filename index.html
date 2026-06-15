@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>NEXUS AI - Ghost Hand Mode</title>
+
+<style>
+body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+/* 隐藏视频（但仍用于识别） */
+#video {
+    display: none;
+}
+
+/* 画布 */
+#canvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+/* HUD */
+#hud {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    color: #00f0ff;
+    font-size: 18px;
+    text-shadow: 0 0 10px #00f0ff;
+}
+</style>
+</head>
+
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas"></canvas>
+<div id="hud">NEXUS AI: Ghost Mode Loading...</div>
+
+<script type="module">
+import { Hands } from "https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js";
+import { Camera } from "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js";
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const hud = document.getElementById("hud");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+/* 粒子 */
+function particle(x, y, color="#00f0ff") {
+    ctx.fillStyle = color;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = color;
+
+    for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.arc(x + Math.random()*20-10, y + Math.random()*20-10, 2, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+/* 手势判断 */
+function gesture(lm) {
+    const indexUp = lm[8].y < lm[6].y;
+    const middleUp = lm[12].y < lm[10].y;
+
+    if (indexUp && middleUp) return "能量场";
+    if (indexUp) return "指令";
+    return "待机";
+}
+
+/* 绘制骨骼 */
+function drawHand(lm) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const connections = [
+        [0,1],[1,2],[2,3],[3,4],
+        [0,5],[5,6],[6,7],[7,8],
+        [5,9],[9,10],[10,11],[11,12],
+        [9,13],[13,14],[14,15],[15,16],
+        [13,17],[0,17],[17,18],[18,19],[19,20]
+    ];
+
+    ctx.strokeStyle = "#00f0ff";
+    ctx.shadowBlur = 10;
+
+    for (let c of connections) {
+        const a = lm[c[0]];
+        const b = lm[c[1]];
+
+        ctx.beginPath();
+        ctx.moveTo(a.x * canvas.width, a.y * canvas.height);
+        ctx.lineTo(b.x * canvas.width, b.y * canvas.height);
+        ctx.stroke();
+    }
+
+    for (let p of lm) {
+        ctx.beginPath();
+        ctx.arc(p.x * canvas.width, p.y * canvas.height, 4, 0, Math.PI*2);
+        ctx.fillStyle = "#00f0ff";
+        ctx.fill();
+    }
+}
+
+/* AI 手势 */
+const hands = new Hands({
+    locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+});
+
+hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.7
+});
+
+hands.onResults((results) => {
+    if (!results.multiHandLandmarks) return;
+
+    const lm = results.multiHandLandmarks[0];
+
+    drawHand(lm);
+
+    const g = gesture(lm);
+    hud.innerText = "NEXUS AI → " + g;
+
+    const x = lm[8].x * canvas.width;
+    const y = lm[8].y * canvas.height;
+
+    if (g === "指令") {
+        particle(x, y);
+    }
+
+    if (g === "能量场") {
+        for (let i = 0; i < 10; i++) {
+            particle(
+                x + Math.random()*80-40,
+                y + Math.random()*80-40,
+                "#ff00ff"
+            );
+        }
+    }
+});
+
+/* 摄像头 */
+const camera = new Camera(video, {
+    onFrame: async () => {
+        await hands.send({ image: video });
+    },
+    width: 1280,
+    height: 720
+});
+
+camera.start();
+</script>
+
+</body>
+</html>
