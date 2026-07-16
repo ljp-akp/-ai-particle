@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>起航AI - thai.quantv.com</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Microsoft YaHei", sans-serif;
+    }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body {
+      background: #050505;
+      color: #fff;
+    }
+
+    /* 手机浏览器顶部栏 */
+    .browser-bar {
+      width: 100%;
+      height: 80px;
+      background: rgba(10, 10, 10, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      color: #d4af37;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+    }
+
+    .browser-left {
+      font-size: 22px;
+      font-weight: 300;
+      color: #d4af37;
+    }
+
+    .browser-center {
+      text-align: center;
+    }
+
+    .browser-title {
+      font-size: 18px;
+      color: #ffffff;
+      font-weight: 500;
+    }
+
+    .browser-url {
+      font-size: 13px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .browser-right {
+      font-size: 22px;
+      color: #d4af37;
+    }
+
+    /* 动态视频背景容器 */
+    .video-bg-wrap {
+      position: absolute;
+      top: 80px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 80px);
+      z-index: 1;
+      overflow: hidden;
+      background: #050505;
+    }
+
+    .bg-video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.85;
+    }
+
+    /* 背景遮罩，保证文字可读性 */
+    .bg-mask {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to top, rgba(5, 5, 5, 0.92) 0%, rgba(5, 5, 5, 0.55) 45%, rgba(5, 5, 5, 0.25) 100%);
+      z-index: 2;
+    }
+
+    /* 星空微尘 */
+    .stars {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .stars span {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.65);
+      border-radius: 50%;
+      animation: twinkle 6s ease-in-out infinite;
+    }
+
+    .stars span:nth-child(1) { left: 10%; top: 8%; animation-delay: 0s; }
+    .stars span:nth-child(2) { left: 25%; top: 12%; animation-delay: 1s; }
+    .stars span:nth-child(3) { left: 40%; top: 6%; animation-delay: 2s; }
+    .stars span:nth-child(4) { left: 55%; top: 15%; animation-delay: 3s; }
+    .stars span:nth-child(5) { left: 70%; top: 10%; animation-delay: 4s; }
+    .stars span:nth-child(6) { left: 85%; top: 18%; animation-delay: 5s; }
+    .stars span:nth-child(7) { left: 15%; top: 22%; animation-delay: 2.5s; }
+    .stars span:nth-child(8) { left: 50%; top: 5%; animation-delay: 1.5s; }
+    .stars span:nth-child(9) { left: 75%; top: 25%; animation-delay: 3.5s; }
+    .stars span:nth-child(10) { left: 90%; top: 12%; animation-delay: 4.5s; }
+
+    /* 头部导航栏 */
+    .page-header {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+    }
+
+    .header-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), transparent 35%),
+        linear-gradient(135deg, #d4af37, #b8860b, #ffd700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 0 18px rgba(212, 175, 55, 0.45);
+    }
+
+    .logo-text {
+      font-size: 23px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+
+    .header-btn {
+      padding: 10px 24px;
+      border: 1px solid rgba(212, 175, 55, 0.65);
+      color: #d4af37;
+      border-radius: 99px;
+      background: rgba(212, 175, 55, 0.08);
+      font-size: 16px;
+      font-weight: 500;
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.18);
+    }
+
+    /* 主体内容容器 */
+    .content-box {
+      position: relative;
+      z-index: 3;
+      padding: 0 20px;
+      margin-top: 24px;
+    }
+
+    .main-title {
+      font-size: 50px;
+      line-height: 1.22;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+
+    .main-title span {
+      background: linear-gradient(90deg, #d4af37, #ffd700, #d4af37);
+      -webkit-background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 30px rgba(212, 175, 55, 0.35);
+    }
+
+    .desc-text {
+      font-size: 20px;
+      color: #cfcfcf;
+      line-height: 1.7;
+      margin-bottom: 42px;
+    }
+
+    .main-btn {
+      display: block;
+      width: 270px;
+      margin: 0 auto 64px;
+      text-align: center;
+      padding: 17px 0;
+      border: 1px solid rgba(212, 175, 55, 0.75);
+      border-radius: 99px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), transparent 35%),
+        linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(184, 134, 11, 0.22));
+      color: #fff;
+      font-size: 20px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 0 22px rgba(212, 175, 55, 0.35);
+    }
+
+    /* 横向滚动案例卡片区域 */
+    .scroll-card-wrap {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      scrollbar-width: none;
+    }
+
+    .scroll-card-wrap::-webkit-scrollbar {
+      display: none;
+    }
+
+    .demo-card {
+      flex: 0 0 260px;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 18px;
+      overflow: hidden;
+      color: #222;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-top-label {
+      padding: 7px 12px;
+      font-size: 14px;
+      color: #d4af37;
+      font-weight: 600;
+    }
+
+    .card-img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+    }
+
+    .card-name {
+      padding: 14px 12px;
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    /* 底部备案信息 */
+    .footer-info {
+      position: relative;
+      z-index: 3;
+      margin-top: 64px;
+      padding: 22px;
+      background: rgba(5, 5, 5, 0.88);
+      text-align: center;
+      font-size: 13px;
+      color: #bbbbbb;
+      line-height: 1.8;
+      border-top: 1px solid rgba(212, 175, 55, 0.12);
+    }
+
+    /* 动画 */
+    @keyframes twinkle {
+      0% { opacity: 0.25; }
+      50% { opacity: 0.85; }
+      100% { opacity: 0.25; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 手机浏览器顶部栏 -->
+  <div class="browser-bar">
+    <div class="browser-left">×</div>
+    <div class="browser-center">
+      <div class="browser-title">起航AI</div>
+      <div class="browser-url">thai.quantv.com</div>
+    </div>
+    <div class="browser-right">⋯</div>
+  </div>
+
+  <!-- 动态视频背景 -->
+  <div class="video-bg-wrap">
+    <video class="bg-video" autoplay muted loop playsinline>
+      <source src="video_bg_qihang_ai_gold_mountain_01.mp4" type="video/mp4">
+    </video>
+
+    <div class="stars">
+      <span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <div class="bg-mask"></div>
+  </div>
+
+  <!-- 页面头部logo+按钮 -->
+  <div class="page-header">
+    <div class="header-logo-wrap">
+      <div class="logo-icon">AI</div>
+      <div class="logo-text">起航AI</div>
+    </div>
+    <button class="header-btn">开始使用</button>
+  </div>
+
+  <!-- 正文内容 -->
+  <div class="content-box">
+    <h1 class="main-title">一站式 <span>AI</span> 多媒体<br>创意平台</h1>
+    <p class="desc-text">一键生成电商图、营销图等多种风格的图片/文案/视频，并可以深度创作AI素材和内容</p>
+    <a class="main-btn" href="#">开始使用</a>
+
+    <!-- 横向滚动案例卡片 -->
+    <div class="scroll-card-wrap">
+
+      <div class="demo-card">
+        <div class="card-top-label">AI生成视频</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="AI生成视频">
+        <div class="card-name">AI一键生成营销视频</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">商业广告</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1610545075885-80d565748c28?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="香水爆炸海报">
+        <div class="card-name">高端产品爆炸瞬间海报</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">营销素材</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1558642084-fd07fae5852c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="汽水广告">
+        <div class="card-name">汽水广告九宫格</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">餐饮电商</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="美食海报">
+        <div class="card-name">食物爆炸瞬间海报</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">科技产品</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="数码产品">
+        <div class="card-name">科技产品冰封渲染图</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">商业人像</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1517457373958-070530a40556?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="时尚人像">
+        <div class="card-name">奢侈品时尚人像大片</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">电商海报</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1556637640-2c80d3201be8?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="电商海报">
+        <div class="card-name">高转化电商活动海报</div>
+      </div>
+
+      <div class="demo-card">
+        <div class="card-top-label">商品渲染</div>
+        <img class="card-img" src="https://images.unsplash.com/photo-1584824486509-06a825204f35?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="商品场景展示">
+        <div class="card-name">商品真实场景展示图</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 底部备案信息 -->
+  <div class="footer-info">
+    <p>公安备案号：鄂公网安备42100302000249号</p>
+    <p>增值电信业务经营许可证：鄂B2-20230244</p>
+    <p>ICP域名备案号：鄂ICP备2024068307号-4</p>
+  </div>
+
+</body>
+</html>
